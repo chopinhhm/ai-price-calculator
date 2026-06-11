@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 模型价格计算器 | Price Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap');
+  :root {
+    --bg: #f8f9fc;
+    --surface: #ffffff;
+    --border: #e8ecf2;
+    --text: #1a1d23;
+    --text-secondary: #6b7280;
+    --primary: #6366f1;
+    --primary-light: #eef2ff;
+    --accent-o: #3b82f6;
+    --accent-a: #8b5cf6;
+    --accent-g: #10b981;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --radius: 12px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%);
+    color: #fff;
+    padding: 64px 0 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(255,255,255,.12) 0%, transparent 60%);
+  }
+  .hero .container { position: relative; z-index: 1; }
+  .hero h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin-bottom: 8px;
+  }
+  .hero p {
+    font-size: 1.05rem;
+    opacity: .85;
+    max-width: 600px;
+    margin-bottom: 20px;
+  }
+  .hero .meta {
+    font-size: .82rem;
+    opacity: .65;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .hero .meta a { color: inherit; opacity: .8; }
+  .hero .meta a:hover { opacity: 1; }
+
+  /* Cards Grid */
+  .providers { margin-top: -28px; position: relative; z-index: 2; }
+  .providers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 860px) { .providers-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+
+  .card-header {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header .logo {
+    width: 32px; height: 32px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .logo-o { background: #10a37f; }
+  .logo-a { background: #d97757; }
+  .logo-g { background: #4285f4; }
+  .card-header h2 { font-size: 1rem; font-weight: 600; }
+  .card-header .badge {
+    margin-left: auto;
+    font-size: .7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 500;
+  }
+
+  .card-body { padding: 12px 20px 16px; }
+
+  .model-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f7;
+    font-size: .875rem;
+  }
+  .model-row:last-child { border-bottom: none; }
+  .model-name { font-weight: 500; }
+  .model-price {
+    display: flex;
+    gap: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .model-price .price-item {
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: .78rem;
+  }
+  .price-in { color: var(--accent-o); }
+  .price-out { color: var(--accent-a); }
+  .price-note { font-size: .75rem; color: var(--text-secondary); margin-top: 6px; }
+
+  /* Calculator Section */
+  .calc-section { margin: 32px 0; }
+  .calc-section h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .calc-section > p { color: var(--text-secondary); font-size: .9rem; margin-bottom: 20px; }
+
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 640px) { .calc-grid { grid-template-columns: 1fr; } }
+
+  .calc-group { background: var(--surface); border-radius: var(--radius); padding: 16px 20px 20px; box-shadow: var(--shadow); }
+  .calc-group label { display: block; font-weight: 500; font-size: .85rem; margin-bottom: 4px; }
+  .calc-group .sub { font-size: .75rem; color: var(--text-secondary); margin-bottom: 8px; }
+  .calc-group input[type="range"] {
+    width: 100%; height: 6px; -webkit-appearance: none; appearance: none;
+    background: #e5e7eb; border-radius: 3px; outline: none; margin: 8px 0;
+  }
+  .calc-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--primary); cursor: pointer;
+    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .range-labels { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text-secondary); }
+
+  .calc-group .val-display { font-size: 1.1rem; font-weight: 600; margin-top: 4px; }
+  .calc-group select {
+    width: 100%; padding: 8px 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    font-size: .875rem; font-family: inherit; color: var(--text);
+    cursor: pointer; margin-top: 8px;
+  }
+
+  /* Results */
+  .results { margin-top: 20px; }
+  .result-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  .result-table th {
+    text-align: left; padding: 10px 12px; background: #f3f4f6;
+    font-weight: 600; font-size: .78rem; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--text-secondary);
+  }
+  .result-table th:first-child { border-radius: 8px 0 0 0; }
+  .result-table th:last-child { border-radius: 0 8px 0 0; text-align: right; }
+  .result-table td { padding: 10px 12px; border-bottom: 1px solid #f1f3f7; }
+  .result-table td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .result-table .total td { font-weight: 700; border-bottom: none; font-size: .95rem; }
+  .result-table .total td:last-child { color: var(--primary); font-size: 1.1rem; }
+  .provider-cell { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-o { background: #10a37f; }
+  .dot-a { background: #d97757; }
+  .dot-g { background: #4285f4; }
+
+  /* Footer */
+  footer {
+    margin-top: 48px; padding: 24px 0; text-align: center;
+    font-size: .8rem; color: var(--text-secondary);
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--primary); }
+  footer .sources { margin-top: 8px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+
+  /* GitHub strip */
+  .gh-strip {
+    text-align: center; padding: 12px 0; font-size: .82rem; color: var(--text-secondary);
+  }
+  .gh-strip a { color: var(--primary); }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <h1>⚡ AI 模型价格计算器</h1>
+    <p>OpenAI · Anthropic · Google Gemini 三大热门 AI API 价格对标与用量成本估算。</p>
+    <div class="meta">
+      <span>📅 数据查询日期：<strong>2026-06-11</strong></span>
+      <span>💡 价格为标准 API 调用价格，单位：美元 / 百万 Token</span>
+      <span>🔗 <a href="https://github.com/chopinhhm/ai-price-calculator" target="_blank">GitHub</a></span>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+
+<!-- Provider Cards -->
+<section class="providers">
+  <div class="providers-grid">
+
+    <!-- OpenAI -->
+    <div class="card">
+      <div class="card-header">
+        <div class="logo logo-o">O</div>
+        <h2>OpenAI</h2>
+        <span class="badge">GPT-5 系列</span>
+      </div>
+      <div class="card-body">
+        <div class="model-row">
+          <span class="model-name">GPT‑5.5</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $5.00</span>
+            <span class="price-item price-out">出 $30.00</span>
+          </span>
+        </div>
+        <div class="model-row">
+          <span class="model-name">GPT‑5.4</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $2.50</span>
+            <span class="price-item price-out">出 $15.00</span>
+          </span>
+        </div>
+        <div class="model-row">
+          <span class="model-name">GPT‑5.4 mini</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $0.75</span>
+            <span class="price-item price-out">出 $4.50</span>
+          </span>
+        </div>
+        <div class="price-note">⚡ Batch API 享 50% 折扣 · 缓存输入低至 $0.075/M</div>
+      </div>
+    </div>
+
+    <!-- Anthropic -->
+    <div class="card">
+      <div class="card-header">
+        <div class="logo logo-a">C</div>
+        <h2>Anthropic</h2>
+        <span class="badge">Claude 系列</span>
+      </div>
+      <div class="card-body">
+        <div class="model-row">
+          <span class="model-name">Opus 4.6</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $5.00</span>
+            <span class="price-item price-out">出 $25.00</span>
+          </span>
+        </div>
+        <div class="model-row">
+          <span class="model-name">Sonnet 4.6</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $3.00</span>
+            <span class="price-item price-out">出 $15.00</span>
+          </span>
+        </div>
+        <div class="model-row">
+          <span class="model-name">Haiku 4.5</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $1.00</span>
+            <span class="price-item price-out">出 $5.00</span>
+          </span>
+        </div>
+        <div class="price-note">⚡ Batch API 5 折 · 缓存命中低至 $0.10/M</div>
+      </div>
+    </div>
+
+    <!-- Google Gemini -->
+    <div class="card">
+      <div class="card-header">
+        <div class="logo logo-g">G</div>
+        <h2>Google</h2>
+        <span class="badge">Gemini 3.1</span>
+      </div>
+      <div class="card-body">
+        <div class="model-row">
+          <span class="model-name">3.1 Pro</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $2.00</span>
+            <span class="price-item price-out">出 $12.00</span>
+          </span>
+        </div>
+        <div class="model-row">
+          <span class="model-name">3.1 Flash</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $0.35</span>
+            <span class="price-item price-out">出 $1.05</span>
+          </span>
+        </div>
+        <div class="model-row">
+          <span class="model-name">3.1 Flash‑Lite</span>
+          <span class="model-price">
+            <span class="price-item price-in">入 $0.10</span>
+            <span class="price-item price-out">出 $0.30</span>
+          </span>
+        </div>
+        <div class="price-note">⚡ 1M 超长上下文 · 免费额度慷慨</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Calculator -->
+<section class="calc-section">
+  <h2>🧮 用量估算器</h2>
+  <p>调整下方参数，对比不同模型的月度成本。</p>
+
+  <div class="calc-grid">
+    <div class="calc-group">
+      <label>📥 月输入 Token 量</label>
+      <div class="sub">包括 Prompt、系统消息、上下文</div>
+      <input type="range" id="inputTokens" min="0.1" max="1000" value="100" step="0.1">
+      <div class="range-labels">
+        <span>0.1M</span>
+        <span id="inputLabel" class="val-display">100M</span>
+        <span>1000M</span>
+      </div>
+    </div>
+    <div class="calc-group">
+      <label>📤 月输出 Token 量</label>
+      <div class="sub">模型生成的回复内容</div>
+      <input type="range" id="outputTokens" min="0.1" max="500" value="30" step="0.1">
+      <div class="range-labels">
+        <span>0.1M</span>
+        <span id="outputLabel" class="val-display">30M</span>
+        <span>500M</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="calc-grid" style="margin-top: 16px;">
+    <div class="calc-group">
+      <label>🤖 对比模型组</label>
+      <select id="modelGroup">
+        <option value="flagship">旗舰级（GPT‑5.5 / Opus 4.6 / Pro 3.1）</option>
+        <option value="standard" selected>标准级（GPT‑5.4 / Sonnet 4.6 / Flash 3.1）</option>
+        <option value="light">轻量级（GPT‑5.4 mini / Haiku 4.5 / Flash‑Lite 3.1）</option>
+      </select>
+    </div>
+    <div class="calc-group">
+      <label>💵 月预算上限</label>
+      <input type="range" id="budget" min="10" max="10000" value="1000" step="10">
+      <div class="range-labels">
+        <span>$10</span>
+        <span id="budgetLabel" class="val-display">$1,000</span>
+        <span>$10,000</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Results -->
+<section class="results" id="results">
+  <table class="result-table">
+    <thead>
+      <tr>
+        <th>模型</th>
+        <th>输入成本</th>
+        <th>输出成本</th>
+        <th>月总费用</th>
+      </tr>
+    </thead>
+    <tbody id="resultsBody"></tbody>
+  </table>
+  <div style="margin-top: 12px; font-size: .8rem; color: var(--text-secondary); text-align: right;" id="summaryNote"></div>
+</section>
+
+<!-- GitHub Strip -->
+<div class="gh-strip">
+  <a href="https://github.com/chopinhhm/ai-price-calculator" target="_blank">🐙 GitHub 仓库</a>
+  · 数据来源：
+  <a href="https://openai.com/api/pricing" target="_blank">OpenAI</a> ·
+  <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" target="_blank">Anthropic</a> ·
+  <a href="https://ai.google.dev/pricing" target="_blank">Google Gemini</a>
+  · 查询日期 2026-06-11
+</div>
+
+</div>
+
+<footer>
+  <p>数据来源于各平台官方价格页，仅供估算参考。实际费用可能因缓存命中、批次折扣、上下文长度等因素有所差异。</p>
+  <div class="sources">
+    <span>📄 OpenAI — <a href="https://openai.com/api/pricing" target="_blank">openai.com/api/pricing</a></span>
+    <span>📄 Anthropic — <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" target="_blank">docs.anthropic.com</a></span>
+    <span>📄 Google — <a href="https://ai.google.dev/pricing" target="_blank">ai.google.dev/pricing</a></span>
+  </div>
+</footer>
+
+<script>
+const PRICES = {
+  flagship: [
+    { name: 'OpenAI GPT‑5.5', input: 5, output: 30, cls: 'dot-o' },
+    { name: 'Anthropic Opus 4.6', input: 5, output: 25, cls: 'dot-a' },
+    { name: 'Gemini 3.1 Pro', input: 2, output: 12, cls: 'dot-g' },
+  ],
+  standard: [
+    { name: 'OpenAI GPT‑5.4', input: 2.5, output: 15, cls: 'dot-o' },
+    { name: 'Anthropic Sonnet 4.6', input: 3, output: 15, cls: 'dot-a' },
+    { name: 'Gemini 3.1 Flash', input: 0.35, output: 1.05, cls: 'dot-g' },
+  ],
+  light: [
+    { name: 'OpenAI GPT‑5.4 mini', input: 0.75, output: 4.5, cls: 'dot-o' },
+    { name: 'Anthropic Haiku 4.5', input: 1, output: 5, cls: 'dot-a' },
+    { name: 'Gemini 3.1 Flash‑Lite', input: 0.10, output: 0.30, cls: 'dot-g' },
+  ],
+};
+
+function fmt(n) {
+  if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+  if (n >= 1) return '$' + n.toFixed(2);
+  return '¢' + (n * 100).toFixed(1);
+}
+
+function update() {
+  const inp = parseFloat(document.getElementById('inputTokens').value);
+  const outp = parseFloat(document.getElementById('outputTokens').value);
+  const grp = document.getElementById('modelGroup').value;
+  const budget = parseFloat(document.getElementById('budget').value);
+
+  document.getElementById('inputLabel').textContent = inp + 'M';
+  document.getElementById('outputLabel').textContent = outp + 'M';
+  document.getElementById('budgetLabel').textContent = '$' + budget.toLocaleString();
+
+  const models = PRICES[grp];
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+
+  let cheapest = Infinity, cheapestName = '';
+
+  models.forEach(m => {
+    const inCost = (inp * m.input);
+    const outCost = (outp * m.output);
+    const total = inCost + outCost;
+    if (total < cheapest) { cheapest = total; cheapestName = m.name; }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="provider-cell"><span class="dot ${m.cls}"></span>${m.name}</span></td>
+      <td>${fmt(inCost)}</td>
+      <td>${fmt(outCost)}</td>
+      <td style="color:${total > budget ? '#ef4444' : '#10b981'}">${fmt(total)} ${total > budget ? '⚠️' : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const budgetPct = Math.round((cheapest / budget) * 100);
+  document.getElementById('summaryNote').textContent =
+    `🏆 最优选择：${cheapestName}（$ ${cheapest.toFixed(2)}，占预算 ${budgetPct}%）`;
+}
+
+document.getElementById('inputTokens').addEventListener('input', update);
+document.getElementById('outputTokens').addEventListener('input', update);
+document.getElementById('modelGroup').addEventListener('change', update);
+document.getElementById('budget').addEventListener('input', update);
+
+update();
+</script>
+</body>
+</html>
