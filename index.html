@@ -3,448 +3,451 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 模型价格计算器 | Price Calculator</title>
+<title>AI Price Explorer — OpenAI · Anthropic · Gemini</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:opsz@14..32&display=swap');
-  :root {
-    --bg: #f8f9fc;
-    --surface: #ffffff;
-    --border: #e8ecf2;
-    --text: #1a1d23;
-    --text-secondary: #6b7280;
-    --primary: #6366f1;
-    --primary-light: #eef2ff;
-    --accent-o: #3b82f6;
-    --accent-a: #8b5cf6;
-    --accent-g: #10b981;
-    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-    --radius: 12px;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-    min-height: 100vh;
-  }
-  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+/* ─── Reset & Variables ─── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;
+  --surface:#12121a;
+  --surface-2:#1a1a26;
+  --surface-3:#222233;
+  --border:rgba(255,255,255,.06);
+  --border-hover:rgba(255,255,255,.12);
+  --text:#e8e8f0;
+  --text-dim:#8888a0;
+  --text-muted:#55556a;
+  --glow-o:rgba(16,163,127,.35);
+  --glow-a:rgba(217,119,87,.35);
+  --glow-g:rgba(66,133,244,.35);
+  --accent-o:#10a37f;
+  --accent-a:#d97757;
+  --accent-g:#4285f4;
+  --accent-purple:#8b5cf6;
+  --radius:16px;
+  --radius-sm:10px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
 
-  /* Hero */
-  .hero {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #3b82f6 100%);
-    color: #fff;
-    padding: 64px 0 56px;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at 20% 80%, rgba(255,255,255,.12) 0%, transparent 60%);
-  }
-  .hero .container { position: relative; z-index: 1; }
-  .hero h1 {
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
-    font-weight: 700;
-    letter-spacing: -.02em;
-    margin-bottom: 8px;
-  }
-  .hero p {
-    font-size: 1.05rem;
-    opacity: .85;
-    max-width: 600px;
-    margin-bottom: 20px;
-  }
-  .hero .meta {
-    font-size: .82rem;
-    opacity: .65;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .hero .meta a { color: inherit; opacity: .8; }
-  .hero .meta a:hover { opacity: 1; }
+/* ─── Ambient Background ─── */
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.ambient .orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.18;animation:drift 20s ease-in-out infinite}
+.orb-1{width:600px;height:600px;background:var(--accent-o);top:-10%;left:-10%;animation-delay:0s}
+.orb-2{width:500px;height:500px;background:var(--accent-a);top:40%;right:-10%;animation-delay:-7s}
+.orb-3{width:450px;height:450px;background:var(--accent-g);bottom:-10%;left:30%;animation-delay:-14s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.05)}66%{transform:translate(-30px,40px) scale(.95)}}
 
-  /* Cards Grid */
-  .providers { margin-top: -28px; position: relative; z-index: 2; }
-  .providers-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-  @media (max-width: 860px) { .providers-grid { grid-template-columns: 1fr; } }
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 24px}
 
-  .card {
-    background: var(--surface);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    transition: box-shadow .2s;
-  }
-  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+/* ─── Nav ─── */
+nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;gap:16px;flex-wrap:wrap}
+nav .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;letter-spacing:-.02em}
+nav .brand svg{width:28px;height:28px}
+nav .links{display:flex;gap:20px;font-size:.85rem;color:var(--text-dim)}
+nav .links a{color:inherit;text-decoration:none;transition:color .2s}
+nav .links a:hover{color:var(--text)}
+.badge-live{font-size:.7rem;padding:3px 10px;border-radius:20px;background:rgba(139,92,246,.15);color:var(--accent-purple);font-weight:500;letter-spacing:.03em}
 
-  .card-header {
-    padding: 16px 20px 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  .card-header .logo {
-    width: 32px; height: 32px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; font-weight: 700; color: #fff; flex-shrink: 0;
-  }
-  .logo-o { background: #10a37f; }
-  .logo-a { background: #d97757; }
-  .logo-g { background: #4285f4; }
-  .card-header h2 { font-size: 1rem; font-weight: 600; }
-  .card-header .badge {
-    margin-left: auto;
-    font-size: .7rem;
-    padding: 2px 8px;
-    border-radius: 20px;
-    background: var(--primary-light);
-    color: var(--primary);
-    font-weight: 500;
-  }
+/* ─── Hero ─── */
+.hero{padding:60px 0 40px;text-align:center}
+.hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;letter-spacing:-.04em;line-height:1.15;background:linear-gradient(135deg,#fff 0%,#a0a0c0 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{max-width:560px;margin:16px auto 0;color:var(--text-dim);font-size:1.05rem;line-height:1.7}
+.hero .date-pill{display:inline-flex;align-items:center;gap:6px;margin-top:20px;padding:6px 16px;border-radius:20px;background:var(--surface-2);border:1px solid var(--border);font-size:.8rem;color:var(--text-dim)}
 
-  .card-body { padding: 12px 20px 16px; }
+/* ─── Provider Cards ─── */
+.providers{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:860px){.providers{grid-template-columns:1fr}}
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:0;
+  overflow:hidden;
+  transition:transform .25s,border-color .25s,box-shadow .25s;
+  position:relative;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  border-radius:var(--radius) var(--radius) 0 0;
+}
+.card-o::before{background:linear-gradient(90deg,var(--accent-o),#34d399)}
+.card-a::before{background:linear-gradient(90deg,var(--accent-a),#f59e0b)}
+.card-g::before{background:linear-gradient(90deg,var(--accent-g),#60a5fa)}
+.card:hover{transform:translateY(-2px);border-color:var(--border-hover)}
+.card-o:hover{box-shadow:0 8px 40px var(--glow-o)}
+.card-a:hover{box-shadow:0 8px 40px var(--glow-a)}
+.card-g:hover{box-shadow:0 8px 40px var(--glow-g)}
 
-  .model-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid #f1f3f7;
-    font-size: .875rem;
-  }
-  .model-row:last-child { border-bottom: none; }
-  .model-name { font-weight: 500; }
-  .model-price {
-    display: flex;
-    gap: 8px;
-    font-variant-numeric: tabular-nums;
-  }
-  .model-price .price-item {
-    background: #f3f4f6;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: .78rem;
-  }
-  .price-in { color: var(--accent-o); }
-  .price-out { color: var(--accent-a); }
-  .price-note { font-size: .75rem; color: var(--text-secondary); margin-top: 6px; }
+.card-head{padding:20px 24px 16px;display:flex;align-items:center;gap:12px}
+.card-head .icon{
+  width:40px;height:40px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+.icon-o{background:linear-gradient(135deg,#10a37f,#34d399)}
+.icon-a{background:linear-gradient(135deg,#d97757,#f59e0b)}
+.icon-g{background:linear-gradient(135deg,#4285f4,#60a5fa)}
+.card-head h2{font-size:1.05rem;font-weight:600;letter-spacing:-.01em}
+.card-head .tier{
+  margin-left:auto;font-size:.68rem;padding:3px 10px;border-radius:20px;font-weight:500;
+  background:var(--surface-3);color:var(--text-dim);
+}
 
-  /* Calculator Section */
-  .calc-section { margin: 32px 0; }
-  .calc-section h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .calc-section > p { color: var(--text-secondary); font-size: .9rem; margin-bottom: 20px; }
+.card-body{padding:0 24px 20px}
+.model-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--border);
+  font-size:.875rem;
+  transition:background .15s;
+}
+.model-row:last-child{border-bottom:none}
+.model-row:hover{background:rgba(255,255,255,.02);margin:0 -24px;padding:10px 24px}
+.model-name{font-weight:500;display:flex;align-items:center;gap:8px}
+.model-name .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-o{background:var(--accent-o)}.dot-a{background:var(--accent-a)}.dot-g{background:var(--accent-g)}
+.prices{display:flex;gap:6px;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.78rem}
+.price-chip{padding:3px 8px;border-radius:6px;font-weight:500}
+.chip-in{background:rgba(16,163,127,.1);color:#34d399}
+.chip-out{background:rgba(139,92,246,.1);color:#a78bfa}
+.card-note{margin-top:12px;font-size:.75rem;color:var(--text-muted);line-height:1.5;display:flex;align-items:flex-start;gap:6px}
+.card-note svg{flex-shrink:0;margin-top:2px}
 
-  .calc-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
-  @media (max-width: 640px) { .calc-grid { grid-template-columns: 1fr; } }
+/* ─── Calculator ─── */
+.calc-section{margin:48px 0 32px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.section-header h2{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+.section-header .line{flex:1;height:1px;background:var(--border)}
 
-  .calc-group { background: var(--surface); border-radius: var(--radius); padding: 16px 20px 20px; box-shadow: var(--shadow); }
-  .calc-group label { display: block; font-weight: 500; font-size: .85rem; margin-bottom: 4px; }
-  .calc-group .sub { font-size: .75rem; color: var(--text-secondary); margin-bottom: 8px; }
-  .calc-group input[type="range"] {
-    width: 100%; height: 6px; -webkit-appearance: none; appearance: none;
-    background: #e5e7eb; border-radius: 3px; outline: none; margin: 8px 0;
-  }
-  .calc-group input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 18px; height: 18px;
-    border-radius: 50%; background: var(--primary); cursor: pointer;
-    border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
-  }
-  .range-labels { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text-secondary); }
+.calc-panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:32px;position:relative;overflow:hidden;
+}
+.calc-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--accent-o),var(--accent-a),var(--accent-g));
+}
 
-  .calc-group .val-display { font-size: 1.1rem; font-weight: 600; margin-top: 4px; }
-  .calc-group select {
-    width: 100%; padding: 8px 12px; border-radius: 8px;
-    border: 1px solid var(--border); background: var(--surface);
-    font-size: .875rem; font-family: inherit; color: var(--text);
-    cursor: pointer; margin-top: 8px;
-  }
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:640px){.calc-grid{grid-template-columns:1fr}}
 
-  /* Results */
-  .results { margin-top: 20px; }
-  .result-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-  .result-table th {
-    text-align: left; padding: 10px 12px; background: #f3f4f6;
-    font-weight: 600; font-size: .78rem; text-transform: uppercase;
-    letter-spacing: .04em; color: var(--text-secondary);
-  }
-  .result-table th:first-child { border-radius: 8px 0 0 0; }
-  .result-table th:last-child { border-radius: 0 8px 0 0; text-align: right; }
-  .result-table td { padding: 10px 12px; border-bottom: 1px solid #f1f3f7; }
-  .result-table td:last-child { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .result-table .total td { font-weight: 700; border-bottom: none; font-size: .95rem; }
-  .result-table .total td:last-child { color: var(--primary); font-size: 1.1rem; }
-  .provider-cell { display: flex; align-items: center; gap: 8px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .dot-o { background: #10a37f; }
-  .dot-a { background: #d97757; }
-  .dot-g { background: #4285f4; }
+.field label{display:flex;align-items:center;gap:6px;font-weight:500;font-size:.85rem;margin-bottom:6px}
+.field .sub{font-size:.75rem;color:var(--text-muted);margin-bottom:10px}
+.field input[type=range]{
+  width:100%;height:6px;-webkit-appearance:none;appearance:none;
+  background:var(--surface-3);border-radius:3px;outline:none;cursor:pointer;
+}
+.field input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:#fff;cursor:pointer;box-shadow:0 0 0 4px rgba(139,92,246,.2),0 2px 8px rgba(0,0,0,.3);
+  transition:box-shadow .2s;
+}
+.field input[type=range]::-webkit-slider-thumb:hover{
+  box-shadow:0 0 0 6px rgba(139,92,246,.3),0 2px 12px rgba(0,0,0,.4);
+}
+.range-ends{display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-muted);margin-top:4px}
+.field .val{
+  font-family:var(--mono);font-size:1.2rem;font-weight:600;margin-top:6px;
+  background:linear-gradient(135deg,#fff,#a0a0c0);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;
+}
+.field select{
+  width:100%;padding:10px 14px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--surface-2);
+  font-size:.875rem;font-family:var(--font);color:var(--text);
+  cursor:pointer;outline:none;transition:border-color .2s;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238888a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+.field select:focus{border-color:var(--accent-purple)}
 
-  /* Footer */
-  footer {
-    margin-top: 48px; padding: 24px 0; text-align: center;
-    font-size: .8rem; color: var(--text-secondary);
-    border-top: 1px solid var(--border);
-  }
-  footer a { color: var(--primary); }
-  footer .sources { margin-top: 8px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+/* ─── Results ─── */
+.results{margin-top:32px}
+.result-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;
+}
+.result-header{
+  padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.result-header h3{font-size:.9rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em}
 
-  /* GitHub strip */
-  .gh-strip {
-    text-align: center; padding: 12px 0; font-size: .82rem; color: var(--text-secondary);
-  }
-  .gh-strip a { color: var(--primary); }
+.result-row{
+  display:grid;grid-template-columns:2fr 1fr 1fr 1.2fr;align-items:center;
+  padding:14px 24px;border-bottom:1px solid var(--border);
+  transition:background .15s;font-size:.875rem;
+}
+.result-row:last-child{border-bottom:none}
+.result-row:hover{background:rgba(255,255,255,.02)}
+.result-row.header-row{
+  font-size:.72rem;font-weight:600;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.06em;padding:10px 24px;
+}
+.result-row .provider{display:flex;align-items:center;gap:10px;font-weight:500}
+.result-row .cost{font-family:var(--mono);font-weight:500;text-align:right}
+.result-row .total-cost{
+  text-align:right;font-weight:700;font-family:var(--mono);font-size:.95rem;
+}
+.result-row .total-cost.over{color:#f87171}
+.result-row .total-cost.under{color:#34d399}
+.result-row .winner{color:#fbbf24;font-size:.7rem;font-weight:600;margin-left:6px}
+
+.summary-bar{
+  margin-top:16px;padding:16px 24px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.summary-bar .best{font-weight:600;font-size:.9rem}
+.summary-bar .best span{color:#fbbf24}
+.summary-bar .pct{font-family:var(--mono);font-size:.85rem;color:var(--text-dim)}
+
+/* ─── Visual Bars ─── */
+.bar-wrap{height:6px;background:var(--surface-3);border-radius:3px;overflow:hidden;margin-top:4px}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s ease}
+
+/* ─── Footer ─── */
+footer{
+  margin-top:64px;padding:32px 0;text-align:center;
+  font-size:.78rem;color:var(--text-muted);
+  border-top:1px solid var(--border);
+}
+footer .sources{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:10px}
+footer a{color:var(--text-dim);text-decoration:none;transition:color .2s}
+footer a:hover{color:var(--text)}
+
+/* ─── Animations ─── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:fadeUp .5s ease both}
+.anim-d1{animation-delay:.1s}.anim-d2{animation-delay:.2s}.anim-d3{animation-delay:.3s}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface-3);border-radius:3px}
 </style>
 </head>
 <body>
 
+<!-- Ambient -->
+<div class="ambient">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- Nav -->
+<nav class="wrap">
+  <div class="brand">
+    <svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#8b5cf6" stroke-width="2"/><circle cx="14" cy="14" r="5" fill="#8b5cf6"/><line x1="14" y1="2" x2="14" y2="8" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="20" x2="14" y2="26" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="14" x2="8" y2="14" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"/><line x1="20" y1="14" x2="26" y2="14" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round"/></svg>
+    AI Price Explorer
+  </div>
+  <div class="links">
+    <a href="https://github.com/chopinhhm/ai-price-calculator" target="_blank">GitHub</a>
+    <span class="badge-live">2026-06 数据</span>
+  </div>
+</nav>
+
 <!-- Hero -->
-<section class="hero">
-  <div class="container">
-    <h1>⚡ AI 模型价格计算器</h1>
-    <p>OpenAI · Anthropic · Google Gemini 三大热门 AI API 价格对标与用量成本估算。</p>
-    <div class="meta">
-      <span>📅 数据查询日期：<strong>2026-06-11</strong></span>
-      <span>💡 价格为标准 API 调用价格，单位：美元 / 百万 Token</span>
-      <span>🔗 <a href="https://github.com/chopinhhm/ai-price-calculator" target="_blank">GitHub</a></span>
-    </div>
+<section class="hero wrap anim">
+  <h1>Compare AI API Pricing<br>Side by Side</h1>
+  <p>OpenAI · Anthropic · Google Gemini 三大平台实时价格对标，交互式成本估算帮你找到最优解。</p>
+  <div class="date-pill">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="3"/></svg>
+    数据更新于 2026-06-11 · 单位：$/M Tokens
   </div>
 </section>
 
-<div class="container">
+<div class="wrap">
 
 <!-- Provider Cards -->
 <section class="providers">
-  <div class="providers-grid">
-
-    <!-- OpenAI -->
-    <div class="card">
-      <div class="card-header">
-        <div class="logo logo-o">O</div>
-        <h2>OpenAI</h2>
-        <span class="badge">GPT-5 系列</span>
+  <!-- OpenAI -->
+  <div class="card card-o anim anim-d1">
+    <div class="card-head">
+      <div class="icon icon-o">O</div>
+      <h2>OpenAI</h2>
+      <span class="tier">GPT-5 Series</span>
+    </div>
+    <div class="card-body">
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-o"></span>GPT‑5.5</span>
+        <span class="prices"><span class="price-chip chip-in">入 $5.00</span><span class="price-chip chip-out">出 $30.00</span></span>
       </div>
-      <div class="card-body">
-        <div class="model-row">
-          <span class="model-name">GPT‑5.5</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $5.00</span>
-            <span class="price-item price-out">出 $30.00</span>
-          </span>
-        </div>
-        <div class="model-row">
-          <span class="model-name">GPT‑5.4</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $2.50</span>
-            <span class="price-item price-out">出 $15.00</span>
-          </span>
-        </div>
-        <div class="model-row">
-          <span class="model-name">GPT‑5.4 mini</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $0.75</span>
-            <span class="price-item price-out">出 $4.50</span>
-          </span>
-        </div>
-        <div class="price-note">⚡ Batch API 享 50% 折扣 · 缓存输入低至 $0.075/M</div>
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-o"></span>GPT‑5.4</span>
+        <span class="prices"><span class="price-chip chip-in">入 $2.50</span><span class="price-chip chip-out">出 $15.00</span></span>
+      </div>
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-o"></span>GPT‑5.4 mini</span>
+        <span class="prices"><span class="price-chip chip-in">入 $0.75</span><span class="price-chip chip-out">出 $4.50</span></span>
+      </div>
+      <div class="card-note">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" opacity=".5"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM8 3.5c.69 0 1.25.56 1.25 1.25v3.5a1.25 1.25 0 01-2.5 0v-3.5C6.75 4.06 7.31 3.5 8 3.5z"/></svg>
+        Batch API 享 50% 折扣 · 缓存输入低至 $0.075/M
       </div>
     </div>
+  </div>
 
-    <!-- Anthropic -->
-    <div class="card">
-      <div class="card-header">
-        <div class="logo logo-a">C</div>
-        <h2>Anthropic</h2>
-        <span class="badge">Claude 系列</span>
+  <!-- Anthropic -->
+  <div class="card card-a anim anim-d2">
+    <div class="card-head">
+      <div class="icon icon-a">C</div>
+      <h2>Anthropic</h2>
+      <span class="tier">Claude Series</span>
+    </div>
+    <div class="card-body">
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-a"></span>Opus 4.6</span>
+        <span class="prices"><span class="price-chip chip-in">入 $5.00</span><span class="price-chip chip-out">出 $25.00</span></span>
       </div>
-      <div class="card-body">
-        <div class="model-row">
-          <span class="model-name">Opus 4.6</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $5.00</span>
-            <span class="price-item price-out">出 $25.00</span>
-          </span>
-        </div>
-        <div class="model-row">
-          <span class="model-name">Sonnet 4.6</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $3.00</span>
-            <span class="price-item price-out">出 $15.00</span>
-          </span>
-        </div>
-        <div class="model-row">
-          <span class="model-name">Haiku 4.5</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $1.00</span>
-            <span class="price-item price-out">出 $5.00</span>
-          </span>
-        </div>
-        <div class="price-note">⚡ Batch API 5 折 · 缓存命中低至 $0.10/M</div>
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-a"></span>Sonnet 4.6</span>
+        <span class="prices"><span class="price-chip chip-in">入 $3.00</span><span class="price-chip chip-out">出 $15.00</span></span>
+      </div>
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-a"></span>Haiku 4.5</span>
+        <span class="prices"><span class="price-chip chip-in">入 $1.00</span><span class="price-chip chip-out">出 $5.00</span></span>
+      </div>
+      <div class="card-note">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" opacity=".5"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM8 3.5c.69 0 1.25.56 1.25 1.25v3.5a1.25 1.25 0 01-2.5 0v-3.5C6.75 4.06 7.31 3.5 8 3.5z"/></svg>
+        Batch API 5 折 · 缓存命中低至 $0.10/M
       </div>
     </div>
+  </div>
 
-    <!-- Google Gemini -->
-    <div class="card">
-      <div class="card-header">
-        <div class="logo logo-g">G</div>
-        <h2>Google</h2>
-        <span class="badge">Gemini 3.1</span>
+  <!-- Google -->
+  <div class="card card-g anim anim-d3">
+    <div class="card-head">
+      <div class="icon icon-g">G</div>
+      <h2>Google</h2>
+      <span class="tier">Gemini 3.1</span>
+    </div>
+    <div class="card-body">
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-g"></span>3.1 Pro</span>
+        <span class="prices"><span class="price-chip chip-in">入 $2.00</span><span class="price-chip chip-out">出 $12.00</span></span>
       </div>
-      <div class="card-body">
-        <div class="model-row">
-          <span class="model-name">3.1 Pro</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $2.00</span>
-            <span class="price-item price-out">出 $12.00</span>
-          </span>
-        </div>
-        <div class="model-row">
-          <span class="model-name">3.1 Flash</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $0.35</span>
-            <span class="price-item price-out">出 $1.05</span>
-          </span>
-        </div>
-        <div class="model-row">
-          <span class="model-name">3.1 Flash‑Lite</span>
-          <span class="model-price">
-            <span class="price-item price-in">入 $0.10</span>
-            <span class="price-item price-out">出 $0.30</span>
-          </span>
-        </div>
-        <div class="price-note">⚡ 1M 超长上下文 · 免费额度慷慨</div>
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-g"></span>3.1 Flash</span>
+        <span class="prices"><span class="price-chip chip-in">入 $0.35</span><span class="price-chip chip-out">出 $1.05</span></span>
+      </div>
+      <div class="model-row">
+        <span class="model-name"><span class="dot dot-g"></span>3.1 Flash‑Lite</span>
+        <span class="prices"><span class="price-chip chip-in">入 $0.10</span><span class="price-chip chip-out">出 $0.30</span></span>
+      </div>
+      <div class="card-note">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" opacity=".5"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM8 3.5c.69 0 1.25.56 1.25 1.25v3.5a1.25 1.25 0 01-2.5 0v-3.5C6.75 4.06 7.31 3.5 8 3.5z"/></svg>
+        1M 超长上下文 · 免费额度慷慨
       </div>
     </div>
-
   </div>
 </section>
 
 <!-- Calculator -->
-<section class="calc-section">
-  <h2>🧮 用量估算器</h2>
-  <p>调整下方参数，对比不同模型的月度成本。</p>
-
-  <div class="calc-grid">
-    <div class="calc-group">
-      <label>📥 月输入 Token 量</label>
-      <div class="sub">包括 Prompt、系统消息、上下文</div>
-      <input type="range" id="inputTokens" min="0.1" max="1000" value="100" step="0.1">
-      <div class="range-labels">
-        <span>0.1M</span>
-        <span id="inputLabel" class="val-display">100M</span>
-        <span>1000M</span>
-      </div>
-    </div>
-    <div class="calc-group">
-      <label>📤 月输出 Token 量</label>
-      <div class="sub">模型生成的回复内容</div>
-      <input type="range" id="outputTokens" min="0.1" max="500" value="30" step="0.1">
-      <div class="range-labels">
-        <span>0.1M</span>
-        <span id="outputLabel" class="val-display">30M</span>
-        <span>500M</span>
-      </div>
-    </div>
+<section class="calc-section anim">
+  <div class="section-header">
+    <h2>🧮 Cost Estimator</h2>
+    <div class="line"></div>
   </div>
 
-  <div class="calc-grid" style="margin-top: 16px;">
-    <div class="calc-group">
-      <label>🤖 对比模型组</label>
-      <select id="modelGroup">
-        <option value="flagship">旗舰级（GPT‑5.5 / Opus 4.6 / Pro 3.1）</option>
-        <option value="standard" selected>标准级（GPT‑5.4 / Sonnet 4.6 / Flash 3.1）</option>
-        <option value="light">轻量级（GPT‑5.4 mini / Haiku 4.5 / Flash‑Lite 3.1）</option>
-      </select>
+  <div class="calc-panel">
+    <div class="calc-grid">
+      <div class="field">
+        <label>📥 Monthly Input Tokens</label>
+        <div class="sub">Prompts, system messages, context</div>
+        <input type="range" id="inputTokens" min="0.1" max="1000" value="100" step="0.1">
+        <div class="range-ends"><span>0.1M</span><span>1,000M</span></div>
+        <div class="val" id="inputLabel">100M</div>
+      </div>
+      <div class="field">
+        <label>📤 Monthly Output Tokens</label>
+        <div class="sub">Model-generated responses</div>
+        <input type="range" id="outputTokens" min="0.1" max="500" value="30" step="0.1">
+        <div class="range-ends"><span>0.1M</span><span>500M</span></div>
+        <div class="val" id="outputLabel">30M</div>
+      </div>
     </div>
-    <div class="calc-group">
-      <label>💵 月预算上限</label>
-      <input type="range" id="budget" min="10" max="10000" value="1000" step="10">
-      <div class="range-labels">
-        <span>$10</span>
-        <span id="budgetLabel" class="val-display">$1,000</span>
-        <span>$10,000</span>
+    <div class="calc-grid" style="margin-top:24px">
+      <div class="field">
+        <label>🤖 Model Tier</label>
+        <select id="modelGroup">
+          <option value="flagship">Flagship — GPT‑5.5 / Opus 4.6 / Pro 3.1</option>
+          <option value="standard" selected>Standard — GPT‑5.4 / Sonnet 4.6 / Flash 3.1</option>
+          <option value="light">Lightweight — GPT‑5.4 mini / Haiku 4.5 / Flash‑Lite 3.1</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>💵 Monthly Budget Cap</label>
+        <input type="range" id="budget" min="10" max="10000" value="1000" step="10">
+        <div class="range-ends"><span>$10</span><span>$10,000</span></div>
+        <div class="val" id="budgetLabel">$1,000</div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- Results -->
-<section class="results" id="results">
-  <table class="result-table">
-    <thead>
-      <tr>
-        <th>模型</th>
-        <th>输入成本</th>
-        <th>输出成本</th>
-        <th>月总费用</th>
-      </tr>
-    </thead>
-    <tbody id="resultsBody"></tbody>
-  </table>
-  <div style="margin-top: 12px; font-size: .8rem; color: var(--text-secondary); text-align: right;" id="summaryNote"></div>
+<section class="results anim" id="results">
+  <div class="result-card">
+    <div class="result-header">
+      <h3>Monthly Cost Breakdown</h3>
+      <span id="tierBadge" style="font-size:.72rem;padding:3px 10px;border-radius:20px;background:var(--surface-3);color:var(--text-dim)"></span>
+    </div>
+    <div class="result-row header-row">
+      <span>Model</span>
+      <span style="text-align:right">Input</span>
+      <span style="text-align:right">Output</span>
+      <span style="text-align:right">Total</span>
+    </div>
+    <div id="resultsBody"></div>
+  </div>
+  <div class="summary-bar" id="summaryBar"></div>
 </section>
 
-<!-- GitHub Strip -->
-<div class="gh-strip">
-  <a href="https://github.com/chopinhhm/ai-price-calculator" target="_blank">🐙 GitHub 仓库</a>
-  · 数据来源：
-  <a href="https://openai.com/api/pricing" target="_blank">OpenAI</a> ·
-  <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" target="_blank">Anthropic</a> ·
-  <a href="https://ai.google.dev/pricing" target="_blank">Google Gemini</a>
-  · 查询日期 2026-06-11
-</div>
-
-</div>
-
+<!-- Footer -->
 <footer>
   <p>数据来源于各平台官方价格页，仅供估算参考。实际费用可能因缓存命中、批次折扣、上下文长度等因素有所差异。</p>
   <div class="sources">
-    <span>📄 OpenAI — <a href="https://openai.com/api/pricing" target="_blank">openai.com/api/pricing</a></span>
-    <span>📄 Anthropic — <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" target="_blank">docs.anthropic.com</a></span>
-    <span>📄 Google — <a href="https://ai.google.dev/pricing" target="_blank">ai.google.dev/pricing</a></span>
+    <a href="https://openai.com/api/pricing" target="_blank">OpenAI Pricing</a>
+    <a href="https://docs.anthropic.com/en/docs/about-claude/pricing" target="_blank">Anthropic Pricing</a>
+    <a href="https://ai.google.dev/pricing" target="_blank">Gemini Pricing</a>
+    <a href="https://github.com/chopinhhm/ai-price-calculator" target="_blank">GitHub Repo</a>
   </div>
 </footer>
+
+</div>
 
 <script>
 const PRICES = {
   flagship: [
-    { name: 'OpenAI GPT‑5.5', input: 5, output: 30, cls: 'dot-o' },
-    { name: 'Anthropic Opus 4.6', input: 5, output: 25, cls: 'dot-a' },
-    { name: 'Gemini 3.1 Pro', input: 2, output: 12, cls: 'dot-g' },
+    { name:'OpenAI GPT‑5.5', input:5, output:30, cls:'dot-o', color:'var(--accent-o)' },
+    { name:'Anthropic Opus 4.6', input:5, output:25, cls:'dot-a', color:'var(--accent-a)' },
+    { name:'Gemini 3.1 Pro', input:2, output:12, cls:'dot-g', color:'var(--accent-g)' },
   ],
   standard: [
-    { name: 'OpenAI GPT‑5.4', input: 2.5, output: 15, cls: 'dot-o' },
-    { name: 'Anthropic Sonnet 4.6', input: 3, output: 15, cls: 'dot-a' },
-    { name: 'Gemini 3.1 Flash', input: 0.35, output: 1.05, cls: 'dot-g' },
+    { name:'OpenAI GPT‑5.4', input:2.5, output:15, cls:'dot-o', color:'var(--accent-o)' },
+    { name:'Anthropic Sonnet 4.6', input:3, output:15, cls:'dot-a', color:'var(--accent-a)' },
+    { name:'Gemini 3.1 Flash', input:0.35, output:1.05, cls:'dot-g', color:'var(--accent-g)' },
   ],
   light: [
-    { name: 'OpenAI GPT‑5.4 mini', input: 0.75, output: 4.5, cls: 'dot-o' },
-    { name: 'Anthropic Haiku 4.5', input: 1, output: 5, cls: 'dot-a' },
-    { name: 'Gemini 3.1 Flash‑Lite', input: 0.10, output: 0.30, cls: 'dot-g' },
+    { name:'OpenAI GPT‑5.4 mini', input:0.75, output:4.5, cls:'dot-o', color:'var(--accent-o)' },
+    { name:'Anthropic Haiku 4.5', input:1, output:5, cls:'dot-a', color:'var(--accent-a)' },
+    { name:'Gemini 3.1 Flash‑Lite', input:0.10, output:0.30, cls:'dot-g', color:'var(--accent-g)' },
   ],
 };
 
+const TIER_LABELS = { flagship:'Flagship', standard:'Standard', light:'Lightweight' };
+
 function fmt(n) {
-  if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+  if (n >= 1000) return '$' + (n/1000).toFixed(1) + 'K';
   if (n >= 1) return '$' + n.toFixed(2);
-  return '¢' + (n * 100).toFixed(1);
+  return '¢' + (n*100).toFixed(1);
 }
 
 function update() {
@@ -456,32 +459,48 @@ function update() {
   document.getElementById('inputLabel').textContent = inp + 'M';
   document.getElementById('outputLabel').textContent = outp + 'M';
   document.getElementById('budgetLabel').textContent = '$' + budget.toLocaleString();
+  document.getElementById('tierBadge').textContent = TIER_LABELS[grp];
 
   const models = PRICES[grp];
   const tbody = document.getElementById('resultsBody');
   tbody.innerHTML = '';
 
-  let cheapest = Infinity, cheapestName = '';
+  let cheapest = Infinity, cheapestName = '', results = [];
 
   models.forEach(m => {
-    const inCost = (inp * m.input);
-    const outCost = (outp * m.output);
+    const inCost = inp * m.input;
+    const outCost = outp * m.output;
     const total = inCost + outCost;
     if (total < cheapest) { cheapest = total; cheapestName = m.name; }
+    results.push({ ...m, inCost, outCost, total });
+  });
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><span class="provider-cell"><span class="dot ${m.cls}"></span>${m.name}</span></td>
-      <td>${fmt(inCost)}</td>
-      <td>${fmt(outCost)}</td>
-      <td style="color:${total > budget ? '#ef4444' : '#10b981'}">${fmt(total)} ${total > budget ? '⚠️' : ''}</td>
+  const maxTotal = Math.max(...results.map(r => r.total));
+
+  results.forEach(r => {
+    const isOver = r.total > budget;
+    const isWinner = r.name === cheapestName;
+    const barPct = Math.min((r.total / Math.max(budget, maxTotal)) * 100, 100);
+
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    row.innerHTML = `
+      <span class="provider"><span class="dot ${r.cls}"></span>${r.name}${isWinner ? '<span class="winner">★ BEST</span>' : ''}</span>
+      <span class="cost">${fmt(r.inCost)}</span>
+      <span class="cost">${fmt(r.outCost)}</span>
+      <span>
+        <span class="total-cost ${isOver ? 'over' : 'under'}">${fmt(r.total)}${isOver ? ' ⚠' : ''}</span>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${barPct}%;background:${r.color}"></div></div>
+      </span>
     `;
-    tbody.appendChild(tr);
+    tbody.appendChild(row);
   });
 
   const budgetPct = Math.round((cheapest / budget) * 100);
-  document.getElementById('summaryNote').textContent =
-    `🏆 最优选择：${cheapestName}（$ ${cheapest.toFixed(2)}，占预算 ${budgetPct}%）`;
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="best">🏆 最优选择：<span>${cheapestName}</span> · $${cheapest.toFixed(2)}/月</div>
+    <div class="pct">占预算 ${budgetPct}%</div>
+  `;
 }
 
 document.getElementById('inputTokens').addEventListener('input', update);
@@ -490,6 +509,12 @@ document.getElementById('modelGroup').addEventListener('change', update);
 document.getElementById('budget').addEventListener('input', update);
 
 update();
+
+// Intersection Observer for scroll animations
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('anim'); observer.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.anim').forEach(el => observer.observe(el));
 </script>
 </body>
 </html>
